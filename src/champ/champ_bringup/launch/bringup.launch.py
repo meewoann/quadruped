@@ -15,7 +15,7 @@ from launch.actions import (
 )
 from launch.event_handlers.on_process_exit import OnProcessExit
 from launch.event_handlers.on_execution_complete import OnExecutionComplete
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
 
@@ -146,6 +146,12 @@ def generate_launch_description():
         description="Run quadruped IMU filter (imu/data_raw -> imu/data)",
     )
 
+    declare_use_vio_odom = DeclareLaunchArgument(
+        "use_vio_odom",
+        default_value="false",
+        description="Disable leg-odometry EKF; VIO (VINS) will provide odom->base_footprint TF",
+    )
+
     description_ld = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -227,6 +233,7 @@ def generate_launch_description():
             ),
         ],
         remappings=[("odometry/filtered", "odom")],
+        condition=UnlessCondition(LaunchConfiguration("use_vio_odom")),
     )
 
     imu_filter_node = Node(
@@ -274,6 +281,7 @@ def generate_launch_description():
             declare_publish_odom_tf,
             declare_close_loop_odom,
             declare_use_imu_filter,
+            declare_use_vio_odom,
             description_ld,
             quadruped_controller_node,
             state_estimator_node,
