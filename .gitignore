@@ -1,13 +1,44 @@
-# ignore everything
-*
+# ==============================
+# ROS2 build artifacts
+# ==============================
+build/
+install/
+log/
 
-# except src folder
-!src/
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
-# keep contents inside src
-!src/**
+# Virtual environments
+venv/
+.env/
 
-# git files
-!.gitignore
-!README.md
-!LICENSE
+# ==============================
+# C/C++
+# ==============================
+*.o
+*.so
+*.a
+*.out
+
+# ==============================
+# VSCode / IDE
+# ==============================
+.vscode/
+.idea/
+
+# ==============================
+# OS files
+# ==============================
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Misc
+# ==============================
+*.log
+*.tmp
