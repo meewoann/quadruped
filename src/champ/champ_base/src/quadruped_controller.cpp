@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <quadruped_controller.h>
+#include <std_msgs/msg/float32_multi_array.hpp>
 
 champ::PhaseGenerator::Time rosTimeToChampTime(const rclcpp::Time& time)
 {
@@ -76,6 +77,9 @@ QuadrupedController::QuadrupedController():
         joint_commands_publisher_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(joint_control_topic, 10);
     }
 
+    // Publisher for joint array used for debugging/monitoring instead of logging
+    joints_publisher_ = this->create_publisher<champ_msgs::msg::Joints>("joints_debug", 10);
+
     if(publish_joint_states_ && !in_gazebo_)
     {
         joint_states_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
@@ -105,12 +109,23 @@ void QuadrupedController::controlLoop_()
     bool foot_contacts[4];
 
     body_controller_.poseCommand(target_foot_positions, req_pose_);
-
     leg_controller_.velocityCommand(target_foot_positions, req_vel_, rosTimeToChampTime(clock_.now()));
     kinematics_.inverse(target_joint_positions, target_foot_positions);
 
     publishFootContacts_(foot_contacts);
     publishJoints_(target_joint_positions);
+
+    // Publish joints as a simple float array message to avoid spamming logs
+    if (joints_publisher_ && joints_publisher_->get_subscription_count() >= 0) {
+        champ_msgs::msg::Joints joints_msg;
+        joints_msg.position.resize(12);
+        for (size_t i = 0; i < 12; ++i) {
+            joints_msg.position[i] = target_joint_positions[i];
+        }
+        joints_publisher_->publish(joints_msg);
+    }
+
+
 }
 
 void QuadrupedController::cmdVelCallback_(const geometry_msgs::msg::Twist::SharedPtr msg)

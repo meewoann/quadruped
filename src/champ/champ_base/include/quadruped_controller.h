@@ -57,6 +57,7 @@ class QuadrupedController: public rclcpp::Node
     
 
     rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr joint_commands_publisher_;
+    rclcpp::Publisher<champ_msgs::msg::Joints>::SharedPtr joints_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_publisher_;
     rclcpp::Publisher<champ_msgs::msg::ContactsStamped>::SharedPtr foot_contacts_publisher_;
 
