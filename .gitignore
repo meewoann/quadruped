@@ -7,8 +7,7 @@
 # keep contents inside src
 !src/**
 
-# allow specific root files
+# git files
 !.gitignore
 !README.md
 !LICENSE
-!LEG_ANGLE_MAPPING.md
