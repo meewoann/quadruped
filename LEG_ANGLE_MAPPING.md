@@ -163,4 +163,3 @@ void sendToHardware(float target_joint_positions[12])
 - **Header**: [src/champ/champ_base/include/quadruped_controller.h](src/champ/champ_base/include/quadruped_controller.h)
 - **Kinematics**: `src/champ/champ/include/champ/kinematics/kinematics.h`
 - **Quadruped Base**: `src/champ/champ/include/champ/quadruped_base/quadruped_base.h`
-ddad

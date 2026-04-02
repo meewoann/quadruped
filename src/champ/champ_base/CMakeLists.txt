@@ -88,12 +88,8 @@ ament_target_dependencies(state_estimation_node ${dependencies})
 
 
 # servo pwm converter node
-add_executable(servo_pwm_converter_node src/servo_pwm_converter_node.cpp)
+add_executable(servo_pwm_converter_node src/servo_serial_converter_node.cpp)
 ament_target_dependencies(servo_pwm_converter_node ${dependencies})
-
-# servo serial sender node
-add_executable(servo_serial_sender_node src/servo_serial_sender_node.cpp)
-ament_target_dependencies(servo_serial_sender_node ${dependencies})
 
 
 
@@ -104,8 +100,7 @@ install(TARGETS
     message_relay_node
     state_estimation
     state_estimation_node
-  servo_pwm_converter_node
-  servo_serial_sender_node
+    servo_pwm_converter_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -116,8 +111,7 @@ install(TARGETS
     quadruped_controller_node
     message_relay_node
     state_estimation_node
-  servo_pwm_converter_node
-  servo_serial_sender_node
+    servo_pwm_converter_node
     DESTINATION lib/${PROJECT_NAME}
 )
 ament_export_include_directories(include)
