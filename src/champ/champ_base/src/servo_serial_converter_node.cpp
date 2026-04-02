@@ -32,10 +32,10 @@ public:
       std::bind(&ServoPwmConverter::jointsCallback, this, _1));
 
     // 🔥 MỞ SERIAL
-    initSerial("/dev/ttyUSB0", B115200);
+    initSerial("/dev/ttyACM0", B115200);
 
     RCLCPP_INFO(this->get_logger(),
-      "servo_pwm_converter_node started (Serial: /dev/ttyUSB0 @115200)");
+      "servo_pwm_converter_node started (Serial: /dev/ttyACM0 @115200)");
   }
 
   ~ServoPwmConverter()
@@ -129,8 +129,7 @@ private:
         close(serial_fd_);
         serial_fd_ = -1;
       } else {
-        RCLCPP_INFO(this->get_logger(), "Sent serial data: '%s' (%zd bytes) angle=%d",
-          data.c_str(), written, value);
+        RCLCPP_INFO(this->get_logger(), "Sent to serial: %d", value);
       }
     }
   }
