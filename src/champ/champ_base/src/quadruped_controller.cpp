@@ -117,10 +117,11 @@ void QuadrupedController::controlLoop_()
 
     // Publish joints as a simple float array message to avoid spamming logs
     if (joints_publisher_ && joints_publisher_->get_subscription_count() >= 0) {
+        constexpr float RAD2DEG = 180.0f / M_PI;
         champ_msgs::msg::Joints joints_msg;
         joints_msg.position.resize(12);
         for (size_t i = 0; i < 12; ++i) {
-            joints_msg.position[i] = target_joint_positions[i];
+            joints_msg.position[i] = target_joint_positions[i] * RAD2DEG;
         }
         joints_publisher_->publish(joints_msg);
     }
