@@ -103,20 +103,29 @@ private:
 
     void parseIncoming_(const std::string& line)
     {
-        // Expected format: IMU,qw,qx,qy,qz,ax,ay,az,gx,gy,gz
+        // Expected format: IMU,qw,qx,qy,qz,ax,ay,az,gx,gy,gz,csum
         if (line.size() < 4 || line.substr(0, 4) != "IMU,") return;
 
-        float vals[10] = {};
+        float vals[11] = {};
         int count = 0;
 
         std::stringstream ss(line.substr(4));
         std::string token;
-        while (std::getline(ss, token, ',') && count < 10) {
+        while (std::getline(ss, token, ',') && count < 11) {
             try { vals[count++] = std::stof(token); }
             catch (...) { return; }
         }
 
-        if (count < 10) return;
+        if (count < 11) return;
+
+        // Validating checksum
+        int expected_csum = ((int)(vals[4] + vals[5] + vals[6] + vals[7] + vals[8] + vals[9])) & 0xFF;
+        int received_csum = (int)vals[10];
+
+        if (expected_csum != received_csum) {
+            RCLCPP_WARN(this->get_logger(), "IMU checksum mismatch!");
+            return;
+        }
 
         champ_msgs::msg::Imu msg;
         msg.orientation.w = vals[0];

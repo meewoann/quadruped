@@ -97,7 +97,7 @@ def generate_launch_description():
             condition=UnlessCondition(sim),
         ),
 
-        # Converts imu/raw (champ_msgs/Imu) → imu/data (sensor_msgs/Imu) with EMA filter
+        # Converts imu/raw (champ_msgs/Imu) → imu/data_raw (sensor_msgs/Imu) directly
         Node(
             package='champ_base',
             executable='message_relay_node',
@@ -106,6 +106,20 @@ def generate_launch_description():
             parameters=[
                 {'has_imu': True},
                 joints_config,
+            ],
+            condition=UnlessCondition(sim),
+        ),
+
+        # Madgwick filter: imu/data_raw → imu/data (computes accurate quaternions)
+        Node(
+            package='imu_filter_madgwick',
+            executable='imu_filter_madgwick_node',
+            name='imu_filter_madgwick',
+            output='screen',
+            parameters=[
+                {'use_mag': False},
+                {'publish_tf': False},
+                {'world_frame': 'enu'}
             ],
             condition=UnlessCondition(sim),
         ),
