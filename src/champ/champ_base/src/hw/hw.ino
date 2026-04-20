@@ -31,7 +31,7 @@ void setup() {
     mpu.setFilterBandwidth(MPU6050_BAND_44_HZ); // Enable DLPF
   }
 
-  inputString.reserve(32);
+  inputString.reserve(256);
 
   Serial.println("Arduino ready");
 }
@@ -39,20 +39,31 @@ void setup() {
 void loop() {
   if (stringComplete) {
     inputString.trim(); // remove potential \r or whitespace
-    int commaIdx = inputString.indexOf(',');
     
-    if (commaIdx > 0) {
-      float val1 = inputString.substring(0, commaIdx).toFloat();
-      float val2 = inputString.substring(commaIdx + 1).toFloat();
-      
-      int angle1 = constrain((int)val1, 0, 180);
-      int angle2 = constrain((int)val2, 0, 180);
-      
-      int pulse1 = map(angle1, 0, 180, SERVOMIN, SERVOMAX);
-      int pulse2 = map(angle2, 0, 180, SERVOMIN, SERVOMAX);
-      
-      pca9685.setPWM(0, 0, pulse1);
-      pca9685.setPWM(1, 0, pulse2);
+    // Process if string is not empty and is not the IMU response itself (to prevent echoing parsing issues just in case)
+    if (inputString.length() > 0 && inputString.indexOf("IMU") == -1) {
+      int startIdx = 0;
+      int expectedJoints = 12;
+      for (int i = 0; i < expectedJoints; i++) {
+        int commaIdx = inputString.indexOf(',', startIdx);
+        String valStr = "";
+        
+        if (commaIdx == -1) {
+          valStr = inputString.substring(startIdx);
+        } else {
+          valStr = inputString.substring(startIdx, commaIdx);
+          startIdx = commaIdx + 1;
+        }
+        
+        if (valStr.length() > 0) {
+          float val = valStr.toFloat();
+          int angle = constrain((int)val, 0, 180);
+          int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX);
+          pca9685.setPWM(i, 0, pulse);
+        }
+        
+        if (commaIdx == -1) break;
+      }
     }
 
     // reset buffer
@@ -74,20 +85,15 @@ void loop() {
     float gy = g.gyro.y;
     float gz = g.gyro.z;
 
-    // Simple additive modulo checksum
-    int csum = ((int)(ax + ay + az + gx + gy + gz)) & 0xFF;
+    String payload = "IMU," + String(qw) + "," + String(qx) + "," + String(qy) + "," + String(qz) + "," +
+                     String(ax) + "," + String(ay) + "," + String(az) + "," +
+                     String(gx) + "," + String(gy) + "," + String(gz) + ",";
 
-    Serial.print("IMU,");
-    Serial.print(qw); Serial.print(",");
-    Serial.print(qx); Serial.print(",");
-    Serial.print(qy); Serial.print(",");
-    Serial.print(qz); Serial.print(",");
-    Serial.print(ax); Serial.print(",");
-    Serial.print(ay); Serial.print(",");
-    Serial.print(az); Serial.print(",");
-    Serial.print(gx); Serial.print(",");
-    Serial.print(gy); Serial.print(",");
-    Serial.print(gz); Serial.print(",");
+    int csum = 0;
+    for (unsigned int i = 0; i < payload.length(); i++) {
+        csum ^= payload[i];
+    }
+    Serial.print(payload);
     Serial.println(csum);
   }
 }
