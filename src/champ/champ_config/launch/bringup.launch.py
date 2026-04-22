@@ -111,6 +111,8 @@ def generate_launch_description():
         ),
 
         # Madgwick filter: imu/data_raw → imu/data (computes accurate quaternions)
+        # gain (beta): controls convergence speed. Default 0.1.
+        # Increase to 0.15–0.2 if orientation converges too slowly.
         Node(
             package='imu_filter_madgwick',
             executable='imu_filter_madgwick_node',
@@ -119,7 +121,8 @@ def generate_launch_description():
             parameters=[
                 {'use_mag': False},
                 {'publish_tf': False},
-                {'world_frame': 'enu'}
+                {'world_frame': 'enu'},
+                {'gain': 0.1},
             ],
             condition=UnlessCondition(sim),
         ),

@@ -102,8 +102,8 @@ void MessageRelay::IMURawCallback_(const champ_msgs::msg::Imu::SharedPtr msg)
     imu_data_msg.linear_acceleration.y = msg->linear_acceleration.y;
     imu_data_msg.linear_acceleration.z = msg->linear_acceleration.z;
 
-    imu_data_msg.angular_velocity.x = msg->angular_velocity.x;
-    imu_data_msg.angular_velocity.y = msg->angular_velocity.y;
+    imu_data_msg.angular_velocity.x = 0.0;
+    imu_data_msg.angular_velocity.y = 0.0;
     imu_data_msg.angular_velocity.z = msg->angular_velocity.z;
 
     // Realistic covariances for MPU6050 with hardware DLPF
@@ -111,9 +111,11 @@ void MessageRelay::IMURawCallback_(const champ_msgs::msg::Imu::SharedPtr msg)
     imu_data_msg.orientation_covariance[4] = 0.01;
     imu_data_msg.orientation_covariance[8] = 0.01;
 
-    imu_data_msg.angular_velocity_covariance[0] = 0.001;
-    imu_data_msg.angular_velocity_covariance[4] = 0.001;
-    imu_data_msg.angular_velocity_covariance[8] = 0.001;
+    // 0.02 is a starting point for MPU6050 with DLPF.
+    // Increase if yaw still drifts under vibration; decrease for tighter tracking.
+    imu_data_msg.angular_velocity_covariance[0] = 0.02;
+    imu_data_msg.angular_velocity_covariance[4] = 0.02;
+    imu_data_msg.angular_velocity_covariance[8] = 0.02;
 
     imu_data_msg.linear_acceleration_covariance[0] = 0.01;
     imu_data_msg.linear_acceleration_covariance[4] = 0.01;

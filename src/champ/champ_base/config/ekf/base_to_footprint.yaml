@@ -20,11 +20,13 @@ base_to_footprint_ekf:
                   false, false, false,
                   false, false, false]
 
+    # Fuse roll/pitch orientation + all angular velocities from IMU.
+    # (NOT vx/vy/vz — sensor_msgs/Imu doesn't carry linear velocities.)
     imu0: imu/data
     imu0_config: [false, false, false,
+                   true,  true, false,
                   false, false, false,
-                  true, true, true,
-                  false, false, false,
+                   true,  true,  true,
                   false, false, false]
 
     odom_frame: base_footprint
