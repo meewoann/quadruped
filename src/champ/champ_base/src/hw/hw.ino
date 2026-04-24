@@ -8,7 +8,7 @@ Adafruit_MPU6050 mpu;
 
 // PWM config cho servo (tùy loại servo có thể chỉnh lại)
 #define SERVOMIN  120   // xung min (~0 độ)
-#define SERVOMAX  600   // xung max (~180 độ)
+#define SERVOMAX  430   // xung max (~180 độ)
 
 String inputString = "";
 bool stringComplete = false;
