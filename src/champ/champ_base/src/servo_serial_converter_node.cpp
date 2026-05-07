@@ -19,8 +19,8 @@
 const double JOINT_OFFSETS[12] = {
     90.0, 60.0, 120.0, // LF
     0.0, 60.0, 0.0, // RF
-    0.0, 0.0, 0.0, // LH
-    0.0, 0.0, 0.0  // RH
+    0.0, 60.0, 0.0, // LH
+    0.0, 60.0, 0.0  // RH
 };
 
 class SerialJointSender : public rclcpp::Node
