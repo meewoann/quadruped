@@ -77,7 +77,7 @@
 
     <gazebo>
         <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-        <parameters>$(find champ_gazebo)/config/ros_control.yaml</parameters>
+        <parameters>$(find champ_description)/config/ros_control.yaml</parameters>
       </plugin>
     </gazebo>
 </robot>
