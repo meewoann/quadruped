@@ -18,9 +18,9 @@
 // Offset configuration for 12 joints (in position units, adjust as needed)
 const double JOINT_OFFSETS[12] = {
     90.0, 30.0, 160.0, // LF
-    0.0, 30.0, 0.0, // RF
-    0.0, 30.0, 0.0, // LH
-    0.0, 30.0, 0.0  // RH
+    90.0, 30.0, 160.0, // RF
+    90.0, 30.0, 160.0, // LH
+    90.0, 30.0, 160.0  // RH
 };
 
 class SerialJointSender : public rclcpp::Node
