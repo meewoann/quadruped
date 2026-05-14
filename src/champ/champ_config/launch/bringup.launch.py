@@ -132,4 +132,13 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(rplidar_launch_path),
             condition=UnlessCondition(sim),
         ),
+
+        # Camera reader: /dev/video0 → /camera_raw
+        Node(
+            package='champ_base',
+            executable='camera_reader_node',
+            name='camera_reader_node',
+            output='screen',
+            condition=UnlessCondition(sim),
+        ),
     ])
