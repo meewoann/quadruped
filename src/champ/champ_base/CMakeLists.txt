@@ -17,6 +17,8 @@ find_package(urdf REQUIRED)
 find_package(champ REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 
 
 set(dependencies
@@ -33,6 +35,7 @@ set(dependencies
   message_filters
   champ
   std_msgs
+  cv_bridge
 )
 
 
@@ -91,6 +94,10 @@ ament_target_dependencies(state_estimation_node ${dependencies})
 add_executable(servo_pwm_converter_node src/servo_serial_converter_node.cpp)
 ament_target_dependencies(servo_pwm_converter_node ${dependencies})
 
+# camera reader node
+add_executable(camera_reader_node src/camera_reader_node.cpp)
+target_link_libraries(camera_reader_node ${OpenCV_LIBRARIES})
+ament_target_dependencies(camera_reader_node ${dependencies} OpenCV)
 
 
 install(TARGETS 
@@ -101,6 +108,7 @@ install(TARGETS
     state_estimation
     state_estimation_node
     servo_pwm_converter_node
+    camera_reader_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -112,6 +120,7 @@ install(TARGETS
     message_relay_node
     state_estimation_node
     servo_pwm_converter_node
+    camera_reader_node
     DESTINATION lib/${PROJECT_NAME}
 )
 ament_export_include_directories(include)
