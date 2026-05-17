@@ -114,6 +114,7 @@
               <!-- <namespace>custom_ns</namespace> -->
               <argument>custom_camera/image_raw:=${name}/rgb/image_raw</argument>
               <argument>custom_camera/image_depth:=${name}/depth/image_raw</argument>
+              <argument>/${name}/camera_info:=/${name}/camera_info_raw</argument>
               <argument>custom_camera/camera_info:=custom_camera/custom_info_raw</argument>
               <argument>custom_camera/camera_info_depth:=${name}/depth/camera_info</argument>
               <argument>custom_camera/points:=${name}/depth/points</argument>

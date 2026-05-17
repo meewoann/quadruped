@@ -188,6 +188,7 @@
           <!-- <namespace>custom_ns</namespace> -->
           <argument>custom_camera/image_raw:=camera/rgb/image_raw</argument>
           <argument>custom_camera/image_depth:=camera/depth/image_raw</argument>
+          <argument>/camera/camera_info:=/camera/camera_info_raw</argument>
           <argument>custom_camera/camera_info:=custom_camera/custom_info_raw</argument>
           <argument>custom_camera/camera_info_depth:=camera/depth/camera_info</argument>
           <argument>custom_camera/points:=camera/depth/points</argument>
