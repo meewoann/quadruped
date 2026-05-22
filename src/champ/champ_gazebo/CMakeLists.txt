@@ -26,6 +26,7 @@ install(PROGRAMS
   scripts/image_crop_node.py
   scripts/odometry_tf.py
   scripts/odometry.py
+  scripts/vins_odom_relay.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

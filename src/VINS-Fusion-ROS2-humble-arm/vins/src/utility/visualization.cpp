@@ -31,11 +31,8 @@ static Vector3d last_path(0.0, 0.0, 0.0);
 
 size_t pub_counter = 0;
 
-std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
-
 void registerPub(rclcpp::Node::SharedPtr n)
 {
-    tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(n);
     pub_latest_odometry = n->create_publisher<nav_msgs::msg::Odometry>("imu_propagate", 1000);
     pub_path = n->create_publisher<nav_msgs::msg::Path>("path", 1000);
     pub_odometry = n->create_publisher<nav_msgs::msg::Odometry>("odometry", 1000);
@@ -62,7 +59,7 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
     odometry.header.stamp.sec = sec_ts;
     odometry.header.stamp.nanosec = nsec_ts;
 
-    odometry.header.frame_id = "odom";
+    odometry.header.frame_id = "world";
     odometry.pose.pose.position.x = P.x();
     odometry.pose.pose.position.y = P.y();
     odometry.pose.pose.position.z = P.z();
@@ -79,7 +76,7 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
 void pubTrackImage(const cv::Mat &imgTrack, const double t)
 {
     std_msgs::msg::Header header;
-    header.frame_id = "odom";
+    header.frame_id = "world";
 
     int sec_ts = (int)t;
     uint nsec_ts = (uint)((t - sec_ts) * 1e9);
@@ -141,8 +138,8 @@ void pubOdometry(const Estimator &estimator, const std_msgs::msg::Header &header
     {
         nav_msgs::msg::Odometry odometry;
         odometry.header = header;
-        odometry.header.frame_id = "odom";
-        odometry.child_frame_id = "base_footprint";
+        odometry.header.frame_id = "world";
+        odometry.child_frame_id = "world";
         Quaterniond tmp_Q;
         tmp_Q = Quaterniond(estimator.Rs[WINDOW_SIZE]);
         odometry.pose.pose.position.x = estimator.Ps[WINDOW_SIZE].x();
@@ -159,10 +156,10 @@ void pubOdometry(const Estimator &estimator, const std_msgs::msg::Header &header
 
         geometry_msgs::msg::PoseStamped pose_stamped;
         pose_stamped.header = header;
-        pose_stamped.header.frame_id = "odom";
+        pose_stamped.header.frame_id = "world";
         pose_stamped.pose = odometry.pose.pose;
         path.header = header;
-        path.header.frame_id = "odom";
+        path.header.frame_id = "world";
         path.poses.push_back(pose_stamped);
         pub_path->publish(path);
 
@@ -196,7 +193,7 @@ void pubKeyPoses(const Estimator &estimator, const std_msgs::msg::Header &header
         return;
     visualization_msgs::msg::Marker key_poses;
     key_poses.header = header;
-    key_poses.header.frame_id = "odom";
+    key_poses.header.frame_id = "world";
     key_poses.ns = "key_poses";
     key_poses.type = visualization_msgs::msg::Marker::SPHERE_LIST;
     key_poses.action = visualization_msgs::msg::Marker::ADD;
@@ -236,7 +233,7 @@ void pubCameraPose(const Estimator &estimator, const std_msgs::msg::Header &head
 
         nav_msgs::msg::Odometry odometry;
         odometry.header = header;
-        odometry.header.frame_id = "odom";
+        odometry.header.frame_id = "world";
         odometry.pose.pose.position.x = P.x();
         odometry.pose.pose.position.y = P.y();
         odometry.pose.pose.position.z = P.z();
@@ -322,26 +319,43 @@ void pubPointCloud(const Estimator &estimator, const std_msgs::msg::Header &head
 
 void pubTF(const Estimator &estimator, const std_msgs::msg::Header &header)
 {
+    return; // tmp.
+
+
+    cout << "tf 1" << endl;
     if( estimator.solver_flag != Estimator::SolverFlag::NON_LINEAR)
         return;
 
+    std::shared_ptr<tf2_ros::TransformBroadcaster> br;
     geometry_msgs::msg::TransformStamped transform, transform_cam;
 
     tf2::Quaternion q;
     // body frame
     Vector3d correct_t;
     Quaterniond correct_q;
-
+    
+    cout << "tf 2" << endl;
     correct_t = estimator.Ps[WINDOW_SIZE];
     correct_q = estimator.Rs[WINDOW_SIZE];
 
-    transform.header.stamp = header.stamp;
-    transform.header.frame_id = "odom";
+    cout << "tf 3" << endl;
+
+    
+    cout << header.stamp.sec + header.stamp.nanosec * (1e-9) << endl;
+    cout << correct_t << endl;
+    cout << correct_q.w() << " " << correct_q.x() << " " << correct_q.y() << " " << correct_q.z() << endl;
+
+
+    // transform.header.stamp = header.stamp;
+    transform.header.frame_id = "world";
     transform.child_frame_id = "body";
 
     transform.transform.translation.x = correct_t(0);
     transform.transform.translation.y = correct_t(1);
     transform.transform.translation.z = correct_t(2);
+
+    cout << "tf 4" << endl;
+
 
     q.setW(correct_q.w());
     q.setX(correct_q.x());
@@ -352,12 +366,20 @@ void pubTF(const Estimator &estimator, const std_msgs::msg::Header &header)
     transform.transform.rotation.z = q.z();
     transform.transform.rotation.w = q.w();
 
-    tf_broadcaster->sendTransform(transform);
+    cout << "tf 5" << endl;
+
+    br->sendTransform(transform);
+
+
+    cout << "tf 6" << endl;
+
+
 
     // camera frame
     transform_cam.header.stamp = header.stamp;
     transform_cam.header.frame_id = "body";
     transform_cam.child_frame_id = "camera";
+
 
     transform_cam.transform.translation.x = estimator.tic[0].x();
     transform_cam.transform.translation.y = estimator.tic[0].y();
@@ -373,10 +395,14 @@ void pubTF(const Estimator &estimator, const std_msgs::msg::Header &header)
     transform_cam.transform.rotation.z = q.z();
     transform_cam.transform.rotation.w = q.w();
 
+    // br->sendTransform(transform_cam);
+
+    cout << "tf 7" << endl;
+
     
     nav_msgs::msg::Odometry odometry;
     odometry.header = header;
-    odometry.header.frame_id = "odom";
+    odometry.header.frame_id = "world";
     odometry.pose.pose.position.x = estimator.tic[0].x();
     odometry.pose.pose.position.y = estimator.tic[0].y();
     odometry.pose.pose.position.z = estimator.tic[0].z();
@@ -432,7 +458,7 @@ void pubTF(const Estimator &estimator, const std_msgs::msg::Header &header)
     
 //     nav_msgs::msg::Odometry odometry;
 //     odometry.header = header;
-//     odometry.header.frame_id = "odom";
+//     odometry.header.frame_id = "world";
 //     odometry.pose.pose.position.x = estimator.tic[0].x();
 //     odometry.pose.pose.position.y = estimator.tic[0].y();
 //     odometry.pose.pose.position.z = estimator.tic[0].z();
@@ -462,7 +488,7 @@ void pubKeyframe(const Estimator &estimator)
         odometry.header.stamp.sec = sec_ts;
         odometry.header.stamp.nanosec = nsec_ts;
 
-        odometry.header.frame_id = "odom";
+        odometry.header.frame_id = "world";
         odometry.pose.pose.position.x = P.x();
         odometry.pose.pose.position.y = P.y();
         odometry.pose.pose.position.z = P.z();
@@ -482,7 +508,7 @@ void pubKeyframe(const Estimator &estimator)
         point_cloud.header.stamp.sec = sec_ts;
         point_cloud.header.stamp.nanosec = nsec_ts;
 
-        point_cloud.header.frame_id = "odom";
+        point_cloud.header.frame_id = "world";
         for (auto &it_per_id : estimator.f_manager.feature)
         {
             int frame_size = it_per_id.feature_per_frame.size();

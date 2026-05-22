@@ -1,0 +1,148 @@
+%YAML:1.0
+
+# ===========================================================================
+# VINS-Fusion Config: CHAMP Quadruped  —  ROS 2 + Gazebo Simulation
+# Generated from workspace inspection (asus_camera.urdf.xacro, accessories.urdf.xacro)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Sensor mode
+# ---------------------------------------------------------------------------
+imu: 1
+num_of_cam: 1
+
+# ---------------------------------------------------------------------------
+# Topic names
+#
+#  RAW IMU:
+#    accessories.urdf.xacro line 46:  <argument>~/out:=data_raw</argument>
+#    namespace: /imu  → full topic: /imu/data_raw
+#    (libgazebo_ros_imu_sensor publishes raw linear_acceleration + angular_velocity)
+#
+#  RAW CAMERA IMAGE:
+#    asus_camera.urdf.xacro:  frame_name = camera_depth_optical_frame
+#    Gazebo plugin remaps:
+#      custom_camera/image_raw  →  camera/rgb/image_raw
+#    image_crop_node.py subscribes /camera/image_raw (Gazebo publishes without /rgb/ prefix
+#    in some versions; verify with ros2 topic list).
+#    image_crop_node.py publishes:  /camera/image_cropped  (640 x 465)
+#    VINS must use the cropped topic (already in the launch pipeline).
+#
+#  NOTE: /imu/data is the EKF-filtered output — do NOT use for VINS.
+#        /imu/data_raw is the raw Gazebo sensor output — USE THIS.
+# ---------------------------------------------------------------------------
+imu_topic:    "/imu/data_raw"
+image0_topic: "/camera/image_cropped"
+output_path:  "/tmp/vins_champ_output/"
+
+# ---------------------------------------------------------------------------
+# Camera calibration file (relative to this config file's directory)
+# ---------------------------------------------------------------------------
+cam0_calib: "cam0_pinhole.yaml"
+
+# ---------------------------------------------------------------------------
+# Image resolution — matches cropped image from image_crop_node.py
+#   Original: 640 x 480  (from URDF <image>)
+#   Crop:     TOP_ROWS = 15 removed from top
+#   Result:   640 x 465
+# ---------------------------------------------------------------------------
+image_width:  640
+image_height: 465
+
+# ---------------------------------------------------------------------------
+# Extrinsic: IMU ← Camera  (body_T_cam0)
+#
+# Provided by user (verified against TF tree):
+#
+#   T_imu_camera_depth_optical =
+#   [  0   0   1   0.250 ]
+#   [ -1   0   0   0.049 ]
+#   [  0  -1   0  -0.075 ]
+#   [  0   0   0   1.000 ]
+#
+# VINS convention: body_T_cam0 = T_imu_cam = transform that takes a point
+# in the camera frame and expresses it in the IMU/body frame.
+# This is exactly the matrix provided above.
+#
+# estimate_extrinsic = 0 → trust these values, do not refine
+# ---------------------------------------------------------------------------
+estimate_extrinsic: 0
+
+body_T_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ 0,  0,  1,  0.250,
+          -1,  0,  0,  0.049,
+           0, -1,  0, -0.075,
+           0,  0,  0,  1.000]
+
+# ---------------------------------------------------------------------------
+# Feature tracker parameters
+# ---------------------------------------------------------------------------
+multiple_thread: 1
+
+max_cnt:      150    # max tracked features per frame
+min_dist:      30    # min pixel distance between features
+freq:           8    # TUNED: 8Hz publish rate (camera ~18Hz actual)
+                     # Lower freq = longer IMU integration window per keyframe
+                     # = better motion consistency at expense of latency
+F_threshold:   1.0   # RANSAC pixel threshold
+show_track:      1   # publish /vins_estimator/image_track topic
+flow_back:       1   # forward-backward LK flow for outlier rejection
+
+# ---------------------------------------------------------------------------
+# Optimization
+# ---------------------------------------------------------------------------
+max_solver_time:    0.04   # seconds
+max_num_iterations:    8
+keyframe_parallax:  10.0   # pixels
+
+# ---------------------------------------------------------------------------
+# IMU noise parameters
+# Gazebo libgazebo_ros_imu_sensor (from URDF accessories.urdf.xacro):
+#   accelGaussianNoise:  0.005 m/s^2
+#   rateGaussianNoise:   0.005 rad/s
+#   accelDrift:          0.005
+#   rateDrift:           0.005
+#
+# VINS uses continuous-time noise model:
+#   acc_n = sigma_a_continuous  [m/s^2 / sqrt(Hz)]
+#   gyr_n = sigma_g_continuous  [rad/s / sqrt(Hz)]
+#   acc_w = sigma_ba             [m/s^2 / sqrt(Hz)]  (bias walk)
+#   gyr_w = sigma_bg             [rad/s / sqrt(Hz)]  (bias walk)
+#
+# Conversion: sigma_continuous = sigma_discrete * sqrt(update_rate)
+#   IMU update_rate = 200 Hz (URDF line 42)
+#   acc_n = 0.005 * sqrt(200) ≈ 0.071  (rounded up for Gazebo imperfections)
+#   gyr_n = 0.005 * sqrt(200) ≈ 0.071
+#
+# For Gazebo (ideal physics), drift noise is low. Use conservative values:
+# ---------------------------------------------------------------------------
+acc_n:  0.5            # TUNED: observed static az range 7.88–13.70 → σ≈1.9 m/s²/sqrt(Hz)
+gyr_n:  0.02           # gyro is cleaner; 4× default
+acc_w:  0.002          # bias walk: higher for Gazebo physics aliasing
+gyr_w:  0.0001         # bias walk: nominal
+g_norm: 9.81007        # gravity magnitude [m/s^2]
+
+# ---------------------------------------------------------------------------
+# Time offset estimation
+# Gazebo sim_time stamps IMU at physics step time, camera at render time.
+# Even with use_sim_time:=true there can be a small offset (~1 render frame).
+# estimate_td: 1 allows VINS to find and correct this online.
+# ---------------------------------------------------------------------------
+estimate_td: 1
+td: 0.0
+
+# ---------------------------------------------------------------------------
+# Visualization / output
+# ---------------------------------------------------------------------------
+save_image:             0   # 0 = do not save images in pose graph
+visualize_imu_forward:  1   # publish IMU propagation at high rate
+visualize_camera_size:  0.4
+
+# ---------------------------------------------------------------------------
+# Loop closure (disabled for VIO-only mode)
+# ---------------------------------------------------------------------------
+load_previous_pose_graph: 0
+pose_graph_save_path: "/tmp/vins_champ_output/pose_graph/"

@@ -1,0 +1,67 @@
+%YAML:1.0
+
+# common parameters
+# support: 1 imu 1 cam
+imu: 1
+num_of_cam: 1
+
+imu_topic: "/imu_raw"
+image0_topic: "/camera_raw"
+image1_topic: "/cam1/image_raw"
+output_path: "/tmp/vins_real_robot_output/"
+
+cam0_calib: "../simulation/cam0_calib.yaml"
+cam1_calib: "../simulation/cam1_mei.yaml"
+image_width: 640
+image_height: 480
+
+# GPU acceleration
+use_gpu         : 0
+use_gpu_acc_flow: 0
+use_gpu_ceres   : 0
+
+# Extrinsic parameter between IMU and Camera.
+# VINS expects IMU <- Camera (body_T_cam0)
+estimate_extrinsic: 0
+body_T_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [0, 0, 1, 0.250,
+          -1, 0, 0, 0.049,
+          0, -1, 0, -0.075,
+          0, 0, 0, 1]
+
+# Multiple thread support
+multiple_thread: 1
+
+# feature tracker parameters
+max_cnt: 150
+min_dist: 30
+freq: 10
+F_threshold: 1.0
+show_track: 1
+flow_back: 1
+
+# optimization parameters
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+
+# imu parameters (initial values; tune for your real IMU)
+acc_n: 0.1
+gyr_n: 0.01
+acc_w: 0.001
+gyr_w: 0.0001
+g_norm: 9.81007
+
+# unsynchronization parameters
+# Set to 0 if camera+IMU are hardware synchronized.
+# Set to 1 if not synchronized and VINS should estimate offset online.
+estimate_td: 1
+td: 0.0
+
+# loop closure parameters
+load_previous_pose_graph: 0
+pose_graph_save_path: "/tmp/vins_real_robot_output/pose_graph/"
+save_image: 0

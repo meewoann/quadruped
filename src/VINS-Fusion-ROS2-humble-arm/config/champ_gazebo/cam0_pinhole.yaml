@@ -1,0 +1,31 @@
+%YAML:1.0
+---
+# Camera calibration for Gazebo ASUS Xtion (asus_camera.urdf.xacro)
+# Sensor:       camera_depth_optical_frame  (libgazebo_ros_camera.so)
+# Raw topic:    /camera/rgb/image_raw  (640 x 480)
+# Cropped topic:/camera/image_cropped  (640 x 465)  <- used by VINS
+#
+# Intrinsic derivation (from URDF):
+#   horizontal_fov = 62.8 deg
+#   image: 640 x 480
+#   fx = fy = (W/2) / tan(HFOV/2) = 320 / tan(31.4 deg) = 524.30
+#   cx = 320.5,  cy_raw = 240.5
+#   After removing TOP_ROWS=15 from crop node: cy = 240.5 - 15 = 225.5
+#
+model_type: PINHOLE
+camera_name: cam0
+
+image_width:  640
+image_height: 465
+
+distortion_parameters:
+   k1: 0.0
+   k2: 0.0
+   p1: 0.0
+   p2: 0.0
+
+projection_parameters:
+   fx: 524.30
+   fy: 524.30
+   cx: 320.5
+   cy: 225.5

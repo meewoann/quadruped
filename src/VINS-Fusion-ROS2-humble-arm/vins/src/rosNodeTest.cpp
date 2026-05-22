@@ -243,8 +243,7 @@ int main(int argc, char **argv)
 	auto n = rclcpp::Node::make_shared("vins_estimator");
     // ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
 
-    auto non_ros_args = rclcpp::remove_ros_arguments(argc, argv);
-    if(non_ros_args.size() != 2)
+    if(argc != 2)
     {
         printf("please intput: rosrun vins vins_node [config file] \n"
                "for example: rosrun vins vins_node "
@@ -252,8 +251,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    string config_file = non_ros_args[1];
-    printf("config_file: %s\n", config_file.c_str());
+    string config_file = argv[1];
+    printf("config_file: %s\n", argv[1]);
 
     readParameters(config_file);
     estimator.setParameter();

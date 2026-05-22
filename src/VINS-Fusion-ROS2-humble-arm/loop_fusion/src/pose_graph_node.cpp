@@ -419,17 +419,16 @@ int main(int argc, char **argv)
     SKIP_CNT = 0;
     SKIP_DIS = 0;
 
-    auto non_ros_args = rclcpp::remove_ros_arguments(argc, argv);
-    if(non_ros_args.size() != 2)
+    if(argc != 2)
     {
         printf("please intput: rosrun loop_fusion loop_fusion_node [config file] \n"
                "for example: rosrun loop_fusion loop_fusion_node "
                "/home/tony-ws1/catkin_ws/src/VINS-Fusion/config/euroc/euroc_stereo_imu_config.yaml \n");
         return 0;
     }
-
-    string config_file = non_ros_args[1];
-    printf("config_file: %s\n", config_file.c_str());
+    
+    string config_file = argv[1];
+    printf("config_file: %s\n", argv[1]);
 
     cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
     if(!fsSettings.isOpened())

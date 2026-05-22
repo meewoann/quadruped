@@ -9,6 +9,7 @@
 
 #include "estimator.h"
 #include "../utility/visualization.h"
+#include <ceres/version.h>
 
 Estimator::Estimator(): f_manager{Rs}
 {
@@ -1166,10 +1167,19 @@ void Estimator::optimization()
 
     ceres::Solver::Options options;
 
+#if CERES_VERSION_MAJOR > 2 || (CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 1)
     if (USE_GPU_CERES)
         // std::cout << "1" << endl;
-        options.dense_linear_algebra_library_type = ceres::EIGEN;
+        options.dense_linear_algebra_library_type = ceres::CUDA;
     else
+#else
+    if (USE_GPU_CERES)
+    {
+        ROS_WARN("GPU Ceres is not supported in Ceres Solver version %s. Falling back to CPU solver.", CERES_VERSION_STRING);
+        options.linear_solver_type = ceres::DENSE_SCHUR;
+    }
+    else
+#endif
         // std::cout << "2" << endl;
         options.linear_solver_type = ceres::DENSE_SCHUR;
 
