@@ -8,10 +8,10 @@ VINS publishes:
   /odometry   (frame_id = "world")   — body pose in world frame
 
 This node publishes:
-  TF:  odom  →  base_footprint    (dynamic, from VINS pose)
-  /odom                      (nav_msgs/Odometry, remapped from VINS)
+  TF:  odom  →  base_link      (dynamic, from VINS pose)
+  /odom                        (nav_msgs/Odometry, remapped from VINS)
 
-This makes VINS the sole source of odom→base_footprint, replacing CHAMP's EKF.
+This makes VINS the sole source of odom→base_link, replacing CHAMP's EKF.
 
 The CHAMP EKF (footprint_to_odom_ekf) must be disabled via:
     ros2 launch champ_config gazebo.launch.py use_vio_odom:=true
@@ -29,6 +29,7 @@ class VinsOdomRelay(Node):
         super().__init__('vins_odom_relay')
 
         self._tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self._vins_initialized = False
 
         # Re-publish VINS odometry as /odom (used by nav stack, RViz, slam_toolbox)
         self._odom_pub = self.create_publisher(Odometry, '/odom', 10)
@@ -40,16 +41,30 @@ class VinsOdomRelay(Node):
             10
         )
 
+        # Heartbeat timer for slam_toolbox before VINS initializes
+        self.create_timer(0.1, self._heartbeat_cb)
+
         self.get_logger().info(
-            'vins_odom_relay started: /odometry → TF odom→base_footprint + /odom'
+            'vins_odom_relay started: /odometry → TF odom→base_link + /odom'
         )
 
+    def _heartbeat_cb(self):
+        if not self._vins_initialized:
+            t = TransformStamped()
+            t.header.stamp = self.get_clock().now().to_msg()
+            t.header.frame_id = 'odom'
+            t.child_frame_id = 'base_link'
+            t.transform.rotation.w = 1.0
+            self._tf_broadcaster.sendTransform(t)
+
     def _odom_cb(self, msg: Odometry):
+        self._vins_initialized = True
+
         # ── 1. Broadcast TF: odom → base_footprint ─────────────────────────
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
         t.header.frame_id = 'odom'
-        t.child_frame_id = 'base_footprint'   # NOT base_link — robot_state_publisher owns base_footprint→base_link
+        t.child_frame_id = 'base_link'   # base_link is the URDF root; robot_state_publisher owns base_link→hokuyo_frame
 
         t.transform.translation.x = msg.pose.pose.position.x
         t.transform.translation.y = msg.pose.pose.position.y
@@ -62,7 +77,7 @@ class VinsOdomRelay(Node):
         out = Odometry()
         out.header.stamp = msg.header.stamp
         out.header.frame_id = 'odom'
-        out.child_frame_id = 'base_footprint'
+        out.child_frame_id = 'base_link'
         out.pose = msg.pose
         out.twist = msg.twist
         self._odom_pub.publish(out)

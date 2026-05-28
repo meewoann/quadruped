@@ -6,8 +6,9 @@ from launch_ros.actions import Node
 
 from launch import LaunchDescription
 from launch.actions import (DeclareLaunchArgument, ExecuteProcess,
-                            IncludeLaunchDescription)
+                            IncludeLaunchDescription, RegisterEventHandler)
 from launch.conditions import IfCondition
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 
@@ -127,10 +128,15 @@ def generate_launch_description():
     robot_description = {"robot_description": Command(["xacro ", LaunchConfiguration("description_path")])}
 
 
-    load_joint_state_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'joint_states_controller'],
-        output='screen',
+    load_joint_state_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_states_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
     )
 
     load_joint_trajectory_position_controller = ExecuteProcess(
@@ -138,10 +144,25 @@ def generate_launch_description():
              'joint_group_position_controller'],
         output='screen'
     )
-    load_joint_trajectory_effort_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'joint_group_effort_controller'],
-        output='screen'
+    load_joint_trajectory_effort_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_group_effort_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
+    )
+
+    load_controllers_after_spawn = RegisterEventHandler(
+        OnProcessExit(
+            target_action=start_gazebo_spawner_cmd,
+            on_exit=[
+                load_joint_state_controller,
+                load_joint_trajectory_effort_controller,
+            ],
+        )
     )
 
     # joint_group_position_controller
@@ -163,9 +184,7 @@ def generate_launch_description():
             start_gazebo_server_cmd,
             start_gazebo_client_cmd,
             start_gazebo_spawner_cmd,
-            load_joint_state_controller,
-            # load_joint_trajectory_position_controller
-            load_joint_trajectory_effort_controller,
+            load_controllers_after_spawn,
             contact_sensor
         ]
     )
