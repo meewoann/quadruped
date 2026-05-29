@@ -104,6 +104,33 @@ private:
                 "Runtime offset updated %s (index %d): delta=%.2f current=%.2f",
                 joint_id.c_str(), joint_index, delta,
                 runtime_offsets_[joint_index]);
+
+    const std::array<double, 12> calibrated_offsets = {
+        base_joint_offsets_[0] + runtime_offsets_[0],
+        base_joint_offsets_[1] + runtime_offsets_[1],
+        base_joint_offsets_[2] + runtime_offsets_[2],
+        base_joint_offsets_[3] + runtime_offsets_[3],
+        base_joint_offsets_[4] + runtime_offsets_[4],
+        base_joint_offsets_[5] + runtime_offsets_[5],
+        base_joint_offsets_[6] + runtime_offsets_[6],
+        base_joint_offsets_[7] + runtime_offsets_[7],
+        base_joint_offsets_[8] + runtime_offsets_[8],
+        base_joint_offsets_[9] + runtime_offsets_[9],
+        base_joint_offsets_[10] + runtime_offsets_[10],
+        base_joint_offsets_[11] + runtime_offsets_[11]};
+
+    RCLCPP_INFO(
+        this->get_logger(),
+        "std::array<double, 12> base_joint_offsets_ = {\n"
+        "    %.1f, %.1f, %.1f, // LF\n"
+        "    %.1f, %.1f, %.1f, // RF\n"
+        "    %.1f, %.1f, %.1f, // LH\n"
+        "    %.1f, %.1f, %.1f  // RH\n"
+        "};",
+        calibrated_offsets[0], calibrated_offsets[1], calibrated_offsets[2],
+        calibrated_offsets[3], calibrated_offsets[4], calibrated_offsets[5],
+        calibrated_offsets[6], calibrated_offsets[7], calibrated_offsets[8],
+        calibrated_offsets[9], calibrated_offsets[10], calibrated_offsets[11]);
   }
 
   void timerCallback_() {
@@ -249,11 +276,13 @@ private:
   bool has_data_ = false;
   champ_msgs::msg::Joints latest_joints_;
   std::array<double, 12> base_joint_offsets_ = {
-      85.0, 80.0, 180.0, // LF
-      95.0, 35.0, 200.0, // RF
-      85.0, 15.0, 155.0, // LH
-      85.0, 80.0, 180.0  // RH
+      85.0, 35.0, 172.0, // LF
+      98.0, 55.0, 180.0, // RF
+      90.0, -5.0, 190.0, // LH
+      95.0, 55.0, 200.0  // RH
   };
+
+
   std::array<double, 12> runtime_offsets_ = {
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
