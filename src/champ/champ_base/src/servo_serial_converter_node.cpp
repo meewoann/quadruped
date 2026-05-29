@@ -2,8 +2,10 @@
 #include <champ_msgs/msg/imu.hpp>
 #include <champ_msgs/msg/joints.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 
 // Serial
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -14,14 +16,6 @@
 #include <atomic>
 #include <sstream>
 #include <thread>
-
-// Offset configuration for 12 joints (in position units, adjust as needed)
-const double JOINT_OFFSETS[12] = {
-    85.0, 80.0, 180.0, // LF
-    95.0, 35.0, 200.0, // RF
-    85.0, 15.0, 155.0, // LH
-    85.0, 80.0, 180.0  // RH
-};
 
 class SerialJointSender : public rclcpp::Node {
 public:
@@ -40,6 +34,11 @@ public:
     subscription_ = this->create_subscription<champ_msgs::msg::Joints>(
         "joints_debug", 10,
         std::bind(&SerialJointSender::jointsCallback_, this,
+                  std::placeholders::_1));
+
+    joint_offset_sub_ = this->create_subscription<std_msgs::msg::String>(
+        "/joint_offset_cmd", 10,
+        std::bind(&SerialJointSender::jointOffsetCallback_, this,
                   std::placeholders::_1));
 
     timer_ = this->create_wall_timer(
@@ -64,6 +63,49 @@ private:
     has_data_ = true;
   }
 
+  void jointOffsetCallback_(const std_msgs::msg::String::SharedPtr msg) {
+    // Expected format: "<LEG><JOINT_INDEX> <DELTA>", e.g. "LF0 1"
+    std::stringstream ss(msg->data);
+    std::string joint_id;
+    double delta = 0.0;
+    std::string extra;
+    if (!(ss >> joint_id >> delta) || (ss >> extra) || joint_id.size() != 3) {
+      RCLCPP_WARN(this->get_logger(),
+                  "Invalid joint offset cmd: '%s' (expected like 'LF0 1')",
+                  msg->data.c_str());
+      return;
+    }
+
+    const std::string leg = joint_id.substr(0, 2);
+    int base = -1;
+    if (leg == "LF") {
+      base = 0;
+    } else if (leg == "RF") {
+      base = 3;
+    } else if (leg == "LH") {
+      base = 6;
+    } else if (leg == "RH") {
+      base = 9;
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Invalid leg in cmd: '%s'",
+                  msg->data.c_str());
+      return;
+    }
+
+    if (joint_id[2] < '0' || joint_id[2] > '2') {
+      RCLCPP_WARN(this->get_logger(), "Invalid joint index in cmd: '%s'",
+                  msg->data.c_str());
+      return;
+    }
+
+    const int joint_index = base + (joint_id[2] - '0');
+    runtime_offsets_[joint_index] += delta;
+    RCLCPP_INFO(this->get_logger(),
+                "Runtime offset updated %s (index %d): delta=%.2f current=%.2f",
+                joint_id.c_str(), joint_index, delta,
+                runtime_offsets_[joint_index]);
+  }
+
   void timerCallback_() {
     if (!has_data_ || serial_fd_ < 0)
       return;
@@ -74,18 +116,20 @@ private:
     int len = snprintf(
         buf, sizeof(buf),
         "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
-        latest_joints_.position[0] + JOINT_OFFSETS[0],
-        latest_joints_.position[1] + JOINT_OFFSETS[1],
-        latest_joints_.position[2] + JOINT_OFFSETS[2],
-        latest_joints_.position[3] + JOINT_OFFSETS[3],
-        latest_joints_.position[4] + JOINT_OFFSETS[4],
-        latest_joints_.position[5] + JOINT_OFFSETS[5],
-        latest_joints_.position[6] + JOINT_OFFSETS[6],
-        latest_joints_.position[7] + JOINT_OFFSETS[7],
-        latest_joints_.position[8] + JOINT_OFFSETS[8],
-        latest_joints_.position[9] + JOINT_OFFSETS[9],
-        latest_joints_.position[10] + JOINT_OFFSETS[10],
-        latest_joints_.position[11] + JOINT_OFFSETS[11]);
+        latest_joints_.position[0] + base_joint_offsets_[0] + runtime_offsets_[0],
+        latest_joints_.position[1] + base_joint_offsets_[1] + runtime_offsets_[1],
+        latest_joints_.position[2] + base_joint_offsets_[2] + runtime_offsets_[2],
+        latest_joints_.position[3] + base_joint_offsets_[3] + runtime_offsets_[3],
+        latest_joints_.position[4] + base_joint_offsets_[4] + runtime_offsets_[4],
+        latest_joints_.position[5] + base_joint_offsets_[5] + runtime_offsets_[5],
+        latest_joints_.position[6] + base_joint_offsets_[6] + runtime_offsets_[6],
+        latest_joints_.position[7] + base_joint_offsets_[7] + runtime_offsets_[7],
+        latest_joints_.position[8] + base_joint_offsets_[8] + runtime_offsets_[8],
+        latest_joints_.position[9] + base_joint_offsets_[9] + runtime_offsets_[9],
+        latest_joints_.position[10] + base_joint_offsets_[10] +
+            runtime_offsets_[10],
+        latest_joints_.position[11] + base_joint_offsets_[11] +
+            runtime_offsets_[11]);
 
     ssize_t written = write(serial_fd_, buf, len);
     if (written < 0) {
@@ -204,12 +248,21 @@ private:
   int serial_fd_ = -1;
   bool has_data_ = false;
   champ_msgs::msg::Joints latest_joints_;
+  std::array<double, 12> base_joint_offsets_ = {
+      85.0, 80.0, 180.0, // LF
+      95.0, 35.0, 200.0, // RF
+      85.0, 15.0, 155.0, // LH
+      85.0, 80.0, 180.0  // RH
+  };
+  std::array<double, 12> runtime_offsets_ = {
+      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
   std::atomic<bool> running_;
   std::thread read_thread_;
 
   rclcpp::Publisher<champ_msgs::msg::Imu>::SharedPtr imu_pub_;
   rclcpp::Subscription<champ_msgs::msg::Joints>::SharedPtr subscription_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr joint_offset_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
