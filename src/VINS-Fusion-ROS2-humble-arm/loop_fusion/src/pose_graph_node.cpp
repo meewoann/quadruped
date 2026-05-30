@@ -419,7 +419,7 @@ int main(int argc, char **argv)
     SKIP_CNT = 0;
     SKIP_DIS = 0;
 
-    if(argc != 2)
+    if(argc < 2)
     {
         printf("please intput: rosrun loop_fusion loop_fusion_node [config file] \n"
                "for example: rosrun loop_fusion loop_fusion_node "
