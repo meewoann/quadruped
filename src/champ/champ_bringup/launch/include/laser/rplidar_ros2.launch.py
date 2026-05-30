@@ -35,7 +35,7 @@ def generate_launch_description():
             parameters=[{
                 'serial_port': LaunchConfiguration('serial_port'),
                 'serial_baudrate': 115200,
-                'frame_id': 'hokuyo_frame',
+                'frame_id': 'lidar_frame',
                 'inverted': False,
                 'angle_compensate': True,
                 'scan_mode': 'Standard',

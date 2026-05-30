@@ -45,8 +45,8 @@
   <gazebo reference="base_link">
     <material>Gazebo/FlatBlack</material>
   </gazebo>
-  <!-- <xacro:hokuyo_utm30lx 
-        name="hokuyo" 
+  <!-- <xacro:lidar_utm30lx 
+        name="lidar" 
         parent="base_link" 
         ros_topic="scan" 
         update_rate="30" 
@@ -54,9 +54,9 @@
         min_angle="130" 
         max_angle="-130" >
         <origin xyz="0.0 0.0 ${base_z_length / 2 + 0.04}" rpy="0 0 0"/>
-    </xacro:hokuyo_utm30lx>
+    </xacro:lidar_utm30lx>
     
-    <gazebo reference="hokuyo_frame">
+    <gazebo reference="lidar_frame">
 		<material>Gazebo/FlatBlack</material>
 	</gazebo>
 

@@ -10,6 +10,8 @@ VINS publishes:
 This node publishes:
   TF:  odom  →  base_link      (dynamic, from VINS pose)
   /odom                        (nav_msgs/Odometry, remapped from VINS)
+  /odom_path                   (nav_msgs/Path, accumulated VINS trajectory)
+  /ground_truth_path           (nav_msgs/Path, accumulated Gazebo ground-truth)
 
 This makes VINS the sole source of odom→base_link, replacing CHAMP's EKF.
 
@@ -19,8 +21,8 @@ The CHAMP EKF (footprint_to_odom_ekf) must be disabled via:
 
 import rclpy
 from rclpy.node import Node
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import TransformStamped
+from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import PoseStamped, TransformStamped
 import tf2_ros
 
 
@@ -34,6 +36,16 @@ class VinsOdomRelay(Node):
         # Re-publish VINS odometry as /odom (used by nav stack, RViz, slam_toolbox)
         self._odom_pub = self.create_publisher(Odometry, '/odom', 10)
 
+        # ── Path publishers for RViz trajectory display ─────────────────────
+        self._odom_path_pub = self.create_publisher(Path, '/odom_path', 10)
+        self._gt_path_pub = self.create_publisher(Path, '/ground_truth_path', 10)
+
+        self._odom_path = Path()
+        self._odom_path.header.frame_id = 'odom'
+
+        self._gt_path = Path()
+        self._gt_path.header.frame_id = 'odom'
+
         self.create_subscription(
             Odometry,
             '/odometry',
@@ -41,11 +53,28 @@ class VinsOdomRelay(Node):
             10
         )
 
+        # Subscribe to Gazebo ground-truth odometry (p3d plugin)
+        # The generated URDF may use /demo/odom/ground_truth or /odom/ground_truth
+        self.create_subscription(
+            Odometry,
+            '/demo/odom/ground_truth',
+            self._gt_odom_cb,
+            10
+        )
+        self.create_subscription(
+            Odometry,
+            '/odom/ground_truth',
+            self._gt_odom_cb,
+            10
+        )
+
         # Heartbeat timer for slam_toolbox before VINS initializes
         self.create_timer(0.1, self._heartbeat_cb)
 
+        self._gt_initial_pose = None
+
         self.get_logger().info(
-            'vins_odom_relay started: /odometry → TF odom→base_link + /odom'
+            'vins_odom_relay started: /odometry → TF odom→base_link + /odom + /odom_path'
         )
 
     def _heartbeat_cb(self):
@@ -60,11 +89,11 @@ class VinsOdomRelay(Node):
     def _odom_cb(self, msg: Odometry):
         self._vins_initialized = True
 
-        # ── 1. Broadcast TF: odom → base_footprint ─────────────────────────
+        # ── 1. Broadcast TF: odom → base_link ──────────────────────────────
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
         t.header.frame_id = 'odom'
-        t.child_frame_id = 'base_link'   # base_link is the URDF root; robot_state_publisher owns base_link→hokuyo_frame
+        t.child_frame_id = 'base_link'   # base_link is the URDF root; robot_state_publisher owns base_link→lidar_frame
 
         t.transform.translation.x = msg.pose.pose.position.x
         t.transform.translation.y = msg.pose.pose.position.y
@@ -82,6 +111,67 @@ class VinsOdomRelay(Node):
         out.twist = msg.twist
         self._odom_pub.publish(out)
 
+        # ── 3. Accumulate into Path and publish ─────────────────────────────
+        pose = PoseStamped()
+        pose.header.stamp = msg.header.stamp
+        pose.header.frame_id = 'odom'
+        pose.pose = msg.pose.pose
+        self._odom_path.poses.append(pose)
+        self._odom_path.header.stamp = msg.header.stamp
+        self._odom_path_pub.publish(self._odom_path)
+
+    def _quaternion_multiply(self, q1, q2):
+        x1, y1, z1, w1 = q1
+        x2, y2, z2, w2 = q2
+        return [
+            w1*x2 + x1*w2 + y1*z2 - z1*y2,
+            w1*y2 - x1*z2 + y1*w2 + z1*x2,
+            w1*z2 + x1*y2 - y1*x2 + z1*w2,
+            w1*w2 - x1*x2 - y1*y2 - z1*z2
+        ]
+
+    def _quaternion_rotate(self, q, v):
+        q_v = [v[0], v[1], v[2], 0.0]
+        q_conj = [-q[0], -q[1], -q[2], q[3]]
+        return self._quaternion_multiply(self._quaternion_multiply(q, q_v), q_conj)[:3]
+
+    def _gt_odom_cb(self, msg: Odometry):
+        """Accumulate Gazebo ground-truth odometry into a Path for RViz."""
+        p = msg.pose.pose.position
+        o = msg.pose.pose.orientation
+        
+        current_t = [p.x, p.y, p.z]
+        current_q = [o.x, o.y, o.z, o.w]
+        
+        if self._gt_initial_pose is None:
+            self._gt_initial_pose = (current_t, current_q)
+            self.get_logger().info(f"Recorded initial ground-truth pose: t={current_t}, q={current_q}")
+            
+        init_t, init_q = self._gt_initial_pose
+        init_q_conj = [-init_q[0], -init_q[1], -init_q[2], init_q[3]]
+        
+        # Translate relative to initial position
+        t_diff = [current_t[0] - init_t[0], current_t[1] - init_t[1], current_t[2] - init_t[2]]
+        # Rotate to align with initial orientation
+        t_transformed = self._quaternion_rotate(init_q_conj, t_diff)
+        # Rotate orientation relative to initial orientation
+        q_transformed = self._quaternion_multiply(init_q_conj, current_q)
+
+        pose = PoseStamped()
+        pose.header.stamp = msg.header.stamp
+        pose.header.frame_id = 'odom'
+        pose.pose.position.x = t_transformed[0]
+        pose.pose.position.y = t_transformed[1]
+        pose.pose.position.z = t_transformed[2]
+        pose.pose.orientation.x = q_transformed[0]
+        pose.pose.orientation.y = q_transformed[1]
+        pose.pose.orientation.z = q_transformed[2]
+        pose.pose.orientation.w = q_transformed[3]
+
+        self._gt_path.poses.append(pose)
+        self._gt_path.header.stamp = msg.header.stamp
+        self._gt_path_pub.publish(self._gt_path)
+
 
 def main():
     rclpy.init()
@@ -93,3 +183,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

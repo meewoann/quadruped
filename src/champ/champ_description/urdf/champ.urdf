@@ -43,12 +43,12 @@
   <gazebo reference="base_link">
     <material>Gazebo/FlatBlack</material>
   </gazebo>
-  <joint name="hokuyo_joint" type="fixed">
+  <joint name="lidar_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.0 0.0 0.10500000000000001"/>
     <parent link="base_link"/>
-    <child link="hokuyo_frame"/>
+    <child link="lidar_frame"/>
   </joint>
-  <link name="hokuyo_frame">
+  <link name="lidar_frame">
     <inertial>
       <mass value="0.270"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -57,19 +57,19 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="file:///home/Alexander.Karavaev/champ_ws/install/champ_description/share/champ_description/meshes/hokuyo_utm_30lx.dae"/>
+        <mesh filename="file:///home/Alexander.Karavaev/champ_ws/install/champ_description/share/champ_description/meshes/lidar_utm_30lx.dae"/>
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.0115"/>
       <geometry>
         <box size="0.058 0.058 0.087"/>
-        <!--<mesh filename="package://hector_sensors_description/meshes/hokuyo_utm30lx/hokuyo_utm_30lx.stl"/>-->
+        <!--<mesh filename="package://hector_sensors_description/meshes/lidar_utm30lx/lidar_utm_30lx.stl"/>-->
       </geometry>
     </collision>
   </link>
-  <gazebo reference="hokuyo_frame">
-    <sensor name="hokuyo" type="ray">
+  <gazebo reference="lidar_frame">
+    <sensor name="lidar" type="ray">
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <pose>0 0 0 0 0 0</pose>
@@ -94,15 +94,15 @@
           <stddev>0.004</stddev>
         </noise>
       </ray>
-      <plugin filename="libgazebo_ros_ray_sensor.so" name="gazebo_ros_hokuyo_controller">
+      <plugin filename="libgazebo_ros_ray_sensor.so" name="gazebo_ros_lidar_controller">
         <ros>
-          <namespace>hokuyo_frame</namespace>
+          <namespace>lidar_frame</namespace>
           <argument>~/out:=scan</argument>
         </ros>
         <!-- Set output to sensor_msgs/PointCloud to get same output type as gazebo_ros_block_laser -->
         <output_type>sensor_msgs/LaserScan</output_type>
         <!-- <frame_name> ommited, will default to block_laser_link -->
-        <!-- min_intensity instead of hokuyoMinIntensity -->
+        <!-- min_intensity instead of lidarMinIntensity -->
         <min_intensity>100.0</min_intensity>
       </plugin>
     </sensor>

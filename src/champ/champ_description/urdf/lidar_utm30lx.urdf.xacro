@@ -3,7 +3,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
     <xacro:property name="M_PI" value="3.1415926535897931" />
 
-    <xacro:macro name="hokuyo_utm30lx_model" params="name parent *origin">
+    <xacro:macro name="lidar_utm30lx_model" params="name parent *origin">
       <joint name="${name}_joint" type="fixed">
         <xacro:insert_block name="origin" />
         <parent link="${parent}"/>
@@ -19,23 +19,23 @@
         <visual>
           <origin xyz="0 0 0" rpy="0 0 0" />
           <geometry>
-          <mesh filename="file://$(find champ_description)/meshes/hokuyo_utm_30lx$(optenv TEST_SELF_FILTER).dae"/>
+          <mesh filename="file://$(find champ_description)/meshes/lidar_utm_30lx$(optenv TEST_SELF_FILTER).dae"/>
         </geometry>
         </visual>
         <collision>
           <origin xyz="0 0 -0.0115" rpy="0 0 0" />
           <geometry>
           <box size="0.058 0.058 0.087" />
-          <!--<mesh filename="package://hector_sensors_description/meshes/hokuyo_utm30lx/hokuyo_utm_30lx.stl"/>-->
+          <!--<mesh filename="package://hector_sensors_description/meshes/lidar_utm30lx/lidar_utm_30lx.stl"/>-->
         </geometry>
         </collision>
       </link>
     </xacro:macro>
 
-    <xacro:macro name="hokuyo_utm30lx" params="name parent *origin ros_topic update_rate ray_count min_angle max_angle">
-      <xacro:hokuyo_utm30lx_model name="${name}" parent="${parent}">
+    <xacro:macro name="lidar_utm30lx" params="name parent *origin ros_topic update_rate ray_count min_angle max_angle">
+      <xacro:lidar_utm30lx_model name="${name}" parent="${parent}">
         <xacro:insert_block name="origin" />
-      </xacro:hokuyo_utm30lx_model>
+      </xacro:lidar_utm30lx_model>
 
       <gazebo reference="${name}_frame">
         <sensor type="ray" name="${name}">
@@ -75,10 +75,10 @@
       </gazebo>
     </xacro:macro>
   
-    <xacro:macro name="hokuyo_utm30lx_gpu" params="name parent *origin ros_topic update_rate ray_count min_angle max_angle">
-      <xacro:hokuyo_utm30lx_model name="${name}" parent="${parent}">
+    <xacro:macro name="lidar_utm30lx_gpu" params="name parent *origin ros_topic update_rate ray_count min_angle max_angle">
+      <xacro:lidar_utm30lx_model name="${name}" parent="${parent}">
         <xacro:insert_block name="origin" />
-      </xacro:hokuyo_utm30lx_model>
+      </xacro:lidar_utm30lx_model>
 
       <gazebo reference="${name}_frame">
         <sensor type="gpu_ray" name="${name}">          
