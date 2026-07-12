@@ -2,7 +2,10 @@
 
 A low-cost 12-DOF quadruped robot with monocular Visual-Inertial Odometry (VIO), built on ROS 2 and simulated in Gazebo. The system combines trot gait control and legged locomotion with VIO for real-time state estimation, enabling odometry-driven SLAM without wheel or leg encoders.
 
-![Quadruped robot in Gazebo](assets/quadrupedrobot.jpg)
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)
+![ROS2](https://img.shields.io/badge/ROS2-Humble-22314E?logo=ros)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420?logo=ubuntu)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ## Overview
 
@@ -15,6 +18,7 @@ Traditional legged robot odometry relies on leg kinematics and IMU fusion, which
 - Jetson Nano (onboard compute)
 - Arduino (low-level servo control)
 - PCA9685
+
 **Note:** VIO in this repo (`main` branch) is currently validated in Gazebo simulation. The real hardware deployment — running on the Jetson Nano with the physical robot — lives on the [`jetson`](../../tree/jetson) branch.
 
 ## Hardware Platform
@@ -23,21 +27,21 @@ The leg uses a linkage-based mechanism (not direct-drive) to transmit servo moti
 
 | Real Robot | Single-Leg Linkage Motion |
 |---|---|
-| ![Real robot hardware](assets/hardware.jpg) | ![Leg linkage motion](assets/leg.gif) |
+| ![Real robot hardware](asset/hardware.jpg) | ![Leg linkage motion](asset/leg.gif) |
 
 **Full robot walking on real hardware:**
 
-![Robot moving on real hardware](assets/moving.gif)
+![Robot moving on real hardware](asset/moving.gif)
 
 ## Demo
 
 | Gazebo Simulation | RViz Map |
 |---|---|
-| ![Gazebo map](assets/gazebomap.jpg) | ![RViz map](assets/rvizmap.jpg) |
+| ![Gazebo map](asset/gazebomap.jpg) | ![RViz map](asset/rvizmap.jpg) |
 
 **VIO running live:**
 
-![VIO demo](assets/output.gif)
+![VIO demo](asset/output.gif)
 
 ## System Architecture
 
@@ -61,7 +65,7 @@ mkdir -p ~/quad_ws/src
 cd ~/quad_ws/src
 
 # Clone this repository
-git clone https://github.com/<your-username>/quadruped-vio.git
+git clone https://github.com/meewoann/quadruped.git
 
 # Install ROS 2 dependencies
 cd ~/quad_ws
