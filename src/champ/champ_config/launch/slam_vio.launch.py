@@ -30,7 +30,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             name='vins_config',
-            default_value='/home/meewoan/quad_ws/src/VINS-Fusion-ROS2-humble-arm/config/champ_gazebo/champ_gazebo_mono_imu.yaml',
+            default_value='/home/meewoan/quad_ws/src/vins_fusion/config/champ_gazebo/champ_gazebo_mono_imu.yaml',
             description='Path to VINS config yaml'
         ),
 

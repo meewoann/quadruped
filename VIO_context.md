@@ -174,7 +174,7 @@ ros2 launch vins vins_mono.launch.py
 ```bash
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-rviz2 -d ~/quad_ws/src/VINS-Fusion-ROS2-humble-arm/config/vins_rviz_config.rviz
+rviz2 -d ~/quad_ws/src/vins_fusion/config/vins_rviz_config.rviz
 ```
 
 ### Terminal 4 — Diagnostics
