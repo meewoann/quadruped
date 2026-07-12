@@ -27,21 +27,21 @@ The leg uses a linkage-based mechanism (not direct-drive) to transmit servo moti
 
 | Real Robot | Single-Leg Linkage Motion |
 |---|---|
-| ![Real robot hardware](asset/hardware.jpg) | ![Leg linkage motion](asset/leg.gif) |
+| ![Real robot hardware](assest/hardware.jpg) | ![Leg linkage motion](assest/leg.gif) |
 
 **Full robot walking on real hardware:**
 
-![Robot moving on real hardware](asset/moving.gif)
+![Robot moving on real hardware](assest/moving.gif)
 
 ## Demo
 
 | Gazebo Simulation | RViz Map |
 |---|---|
-| ![Gazebo map](asset/gazebomap.jpg) | ![RViz map](asset/rvizmap.jpg) |
+| ![Gazebo map](assest/gazebomap.jpg) | ![RViz map](assest/rvizmap.jpg) |
 
 **VIO running live:**
 
-![VIO demo](asset/output.gif)
+![VIO demo](assest/output.gif)
 
 ## System Architecture
 
