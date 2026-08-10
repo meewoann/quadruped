@@ -117,6 +117,3 @@ quadruped-vio/
 └── ...
 ```
 
-## License
-
-See [LICENCE](src/vins_fusion/LICENCE) for VINS-Fusion licensing terms.
